@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/cluster-service: "true"
+    k8s-app: kube-dns-autoscaler
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      k8s-app: kube-dns-autoscaler
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-dns-autoscaler
+    spec:
+      serviceAccountName: kube-dns-autoscaler
+      priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        supplementalGroups: [65534]
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: components.gke.io/gke-managed-components
+        operator: Exists
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+      containers:
+      - name: autoscaler
+        image: gke.gcr.io/cluster-proportional-autoscaler:1.8.4-gke.1
+        command:
+        - /cluster-proportional-autoscaler
+        - --namespace=kube-system
+        - --configmap=kube-dns-autoscaler
+        - --target=Deployment/kube-dns
+        - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true,"includeUnschedulableNodes":true}}
+        - --logtostderr=true
+        - --v=2
+        resources:
+          requests:
+            cpu: 20m
+            memory: 10Mi

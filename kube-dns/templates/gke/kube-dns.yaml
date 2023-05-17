@@ -1,77 +1,3 @@
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: Role
-# metadata:
-#   name: kube-dns
-#   namespace: kube-system
-# rules:
-# - apiGroups: ["apps"]
-#   resources: ["deployments"]
-#   resourceNames: ["kube-dns", "kube-dns-autoscaler"]
-#   verbs: ["patch"]
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: RoleBinding
-# metadata:
-#   name: kube-dns
-#   namespace: kube-system
-# subjects:
-# - kind: ServiceAccount
-#   name: kube-dns
-#   namespace: kube-system
-# roleRef:
-#   kind: Role
-#   name: kube-dns
-#   apiGroup: rbac.authorization.k8s.io
-# ---
-# apiVersion: batch/v1
-# kind: Job
-# metadata:
-#   name: busybox
-#   namespace: kube-system
-#   annotations:
-#     helm.sh/hook: post-install,post-upgrade
-# spec:
-#   backoffLimit: 2
-#   template:
-#     spec:
-#       serviceAccountName: kube-dns
-#       restartPolicy: Never
-#       containers:
-#       - name: busybox
-#         image: alpine:3.18
-#         args:
-#         - sh
-#         - -c
-#         - |
-#           apk add -U curl jq
-
-#           APISERVER=https://kubernetes.default.svc
-#           SERVICEACCOUNT=/var/run/secrets/kubernetes.io/serviceaccount
-#           NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
-#           TOKEN=$(cat ${SERVICEACCOUNT}/token)
-#           CACERT=${SERVICEACCOUNT}/ca.crt
-
-#           for name in kube-dns kube-dns-autoscaler; do
-#             response=$(\
-#               curl \
-#                 --request PATCH \
-#                 --silent \
-#                 --output response.txt \
-#                 --write-out %{http_code} \
-#                 --cacert $CACERT \
-#                 --header "Authorization: Bearer $TOKEN" \
-#                 --header "Content-Type: application/merge-patch+json" \
-#                 --data '{"spec":{"replicas":0}}' \
-#                 ${APISERVER}/apis/apps/v1/namespaces/$NAMESPACE/deployments/$name?pretty=false)
-
-#             if [ $response -ne 200 ]; then
-#               echo "ERROR: $(jq -r .message response.txt)"
-#               exit 1
-#             else
-#               echo $name -> $response
-#             fi
-#           done
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -79,12 +5,10 @@ metadata:
   namespace: kube-system
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
-    k8s-app: kube-dns
     kubernetes.io/cluster-service: "true"
+    k8s-app: kube-dns
 spec:
-  progressDeadlineSeconds: 600
   replicas: 0
-  revisionHistoryLimit: 10
   selector:
     matchLabels:
       k8s-app: kube-dns
@@ -92,14 +16,12 @@ spec:
     rollingUpdate:
       maxSurge: 10%
       maxUnavailable: 0
-    type: RollingUpdate
   template:
     metadata:
       annotations:
         components.gke.io/component-name: kubedns
         prometheus.io/port: "10054"
         prometheus.io/scrape: "true"
-      creationTimestamp: null
       labels:
         k8s-app: kube-dns
     spec:
