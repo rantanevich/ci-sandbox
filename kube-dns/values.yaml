@@ -1,10 +1,10 @@
-nodeSelector: {}
-  # cloud.google.com/gke-container-runtime: containerd
+nodeSelector:
+  cloud.google.com/gke-container-runtime: containerd
 
-tolerations: []
-# - key: pool-type
-#   operator: Equal
-#   value: infra
-#   effect: NoSchedule
+tolerations:
+- key: pool-type
+  operator: Equal
+  value: infra
+  effect: NoSchedule
 
 autoscaler: {}
