@@ -8,7 +8,7 @@ metadata:
     kubernetes.io/cluster-service: "true"
     k8s-app: kube-dns-autoscaler
 spec:
-  replicas: {{ .Values.autoscaler.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
       k8s-app: kube-dns-autoscaler

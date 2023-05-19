@@ -8,7 +8,6 @@ metadata:
     kubernetes.io/cluster-service: "true"
     k8s-app: kube-dns
 spec:
-  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       k8s-app: kube-dns
