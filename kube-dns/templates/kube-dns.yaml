@@ -42,7 +42,13 @@ spec:
         fsGroup: 65534
         supplementalGroups:
         - 65534
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
       tolerations:
+      {{- with .Values.tolerations }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
       - key: CriticalAddonsOnly
         operator: Exists
       - key: components.gke.io/gke-managed-components

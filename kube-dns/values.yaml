@@ -1,4 +1,10 @@
-replicaCount: 0
+nodeSelector:
+  cloud.google.com/gke-container-runtime: containerd
 
-autoscaler:
-  replicaCount: 0
+tolerations:
+- key: pool-type
+  operator: Equal
+  value: infra
+  effect: NoSchedule
+
+autoscaler: {}
