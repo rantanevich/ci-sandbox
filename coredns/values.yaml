@@ -1,5 +1,7 @@
 coredns:
   replicaCount: 2
+  priorityClassName: system-cluster-critical
+  k8sAppLabelOverride: kube-dns
   nodeSelector: {}
   tolerations: []
   podDisruptionBudget: {}
@@ -11,4 +13,7 @@ coredns:
     requests:
       cpu: 100m
       memory: 128Mi
+  service:
+    name: kube-dns
+
   # autoscaler: {}
