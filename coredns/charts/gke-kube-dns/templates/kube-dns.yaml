@@ -26,6 +26,7 @@ spec:
         k8s-app: kube-dns
     spec:
       serviceAccountName: kube-dns
+      priorityClassName: system-cluster-critical
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -38,7 +39,6 @@ spec:
                   - kube-dns
               topologyKey: kubernetes.io/hostname
             weight: 100
-            priorityClassName: system-cluster-critical
       securityContext:
         fsGroup: 65534
         supplementalGroups:
