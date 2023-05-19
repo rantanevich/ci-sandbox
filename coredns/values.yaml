@@ -1,0 +1,14 @@
+coredns:
+  replicaCount: 2
+  nodeSelector: {}
+  tolerations: []
+  podDisruptionBudget: {}
+  hpa: {}
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # autoscaler: {}

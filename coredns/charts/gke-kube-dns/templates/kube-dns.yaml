@@ -8,7 +8,7 @@ metadata:
     kubernetes.io/cluster-service: "true"
     k8s-app: kube-dns
 spec:
-  replicas: 0
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       k8s-app: kube-dns
@@ -25,6 +25,7 @@ spec:
       labels:
         k8s-app: kube-dns
     spec:
+      serviceAccountName: kube-dns
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -37,8 +38,30 @@ spec:
                   - kube-dns
               topologyKey: kubernetes.io/hostname
             weight: 100
+            priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 65534
+        supplementalGroups:
+        - 65534
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: components.gke.io/gke-managed-components
+        operator: Exists
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+      volumes:
+      - name: kube-dns-config
+        configMap:
+          defaultMode: 420
+          name: kube-dns
+          optional: true
       containers:
-      - args:
+      - name: kubedns
+        image: gke.gcr.io/k8s-dns-kube-dns:1.22.12-gke.0
+        args:
         - --domain=cluster.local.
         - --dns-port=10053
         - --config-dir=/kube-dns-config
@@ -46,8 +69,6 @@ spec:
         env:
         - name: PROMETHEUS_PORT
           value: "10055"
-        image: gke.gcr.io/k8s-dns-kube-dns:1.22.12-gke.0
-        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
           httpGet:
@@ -58,7 +79,6 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
-        name: kubedns
         ports:
         - containerPort: 10053
           name: dns-local
@@ -93,7 +113,9 @@ spec:
         volumeMounts:
         - mountPath: /kube-dns-config
           name: kube-dns-config
-      - args:
+      - name: dnsmasq
+        image: gke.gcr.io/k8s-dns-dnsmasq-nanny:1.22.12-gke.0
+        args:
         - -v=2
         - -logtostderr
         - -configDir=/etc/k8s/dns/dnsmasq-nanny
@@ -109,8 +131,6 @@ spec:
         - --server=/ip6.arpa/127.0.0.1#10053
         - --max-ttl=30
         - --max-cache-ttl=30
-        image: gke.gcr.io/k8s-dns-dnsmasq-nanny:1.22.12-gke.0
-        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
           httpGet:
@@ -121,7 +141,6 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
-        name: dnsmasq
         ports:
         - containerPort: 53
           name: dns
@@ -143,12 +162,13 @@ spec:
         volumeMounts:
         - mountPath: /etc/k8s/dns/dnsmasq-nanny
           name: kube-dns-config
-      - args:
+      - name: sidecar
+        image: gke.gcr.io/k8s-dns-sidecar:1.22.12-gke.0
+        args:
         - --v=2
         - --logtostderr
         - --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.cluster.local,5,SRV
         - --probe=dnsmasq,127.0.0.1:53,kubernetes.default.svc.cluster.local,5,SRV
-        image: gke.gcr.io/k8s-dns-sidecar:1.22.12-gke.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
@@ -160,7 +180,6 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
-        name: sidecar
         ports:
         - containerPort: 10054
           name: metrics
@@ -174,7 +193,9 @@ spec:
           readOnlyRootFilesystem: true
           runAsGroup: 1001
           runAsUser: 1001
-      - command:
+      - name: prometheus-to-sd
+        image: gke.gcr.io/prometheus-to-sd:v0.11.3-gke.0
+        command:
         - /monitor
         - --source=kubedns:http://localhost:10054?whitelisted=probe_kubedns_latency_ms,probe_kubedns_errors,probe_dnsmasq_latency_ms,probe_dnsmasq_errors,dnsmasq_misses,dnsmasq_hits
         - --stackdriver-prefix=container.googleapis.com/internal/addons
@@ -193,40 +214,9 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: gke.gcr.io/prometheus-to-sd:v0.11.3-gke.0
         imagePullPolicy: IfNotPresent
-        name: prometheus-to-sd
-        resources: {}
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsGroup: 1001
           runAsUser: 1001
-      dnsPolicy: Default
-      nodeSelector:
-        kubernetes.io/os: linux
-      priorityClassName: system-cluster-critical
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext:
-        fsGroup: 65534
-        supplementalGroups:
-        - 65534
-      serviceAccount: kube-dns
-      serviceAccountName: kube-dns
-      terminationGracePeriodSeconds: 30
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: components.gke.io/gke-managed-components
-        operator: Exists
-      - effect: NoSchedule
-        key: kubernetes.io/arch
-        operator: Equal
-        value: arm64
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: kube-dns
-          optional: true
-        name: kube-dns-config
