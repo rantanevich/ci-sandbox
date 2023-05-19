@@ -15,5 +15,7 @@ coredns:
       memory: 128Mi
   service:
     name: kube-dns
+  deployment:
+    name: coredns
 
   # autoscaler: {}
