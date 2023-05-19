@@ -107,6 +107,7 @@ spec:
         resources:
           limits:
             memory: 210Mi
+            cpu: 200m
           requests:
             cpu: 100m
             memory: 70Mi
@@ -157,6 +158,9 @@ spec:
           requests:
             cpu: 150m
             memory: 20Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
         securityContext:
           capabilities:
             add:
@@ -193,6 +197,9 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -219,9 +226,15 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsGroup: 1001
           runAsUser: 1001
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
