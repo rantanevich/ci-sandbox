@@ -7,8 +7,8 @@ spec:
     spec:
       nodeSelector:
         iam.gke.io/gke-metadata-server-enabled: "true"
-      # tolerations:
-      # - key: pool-type
-      #   operator: Equal
-      #   value: infra
-      #   effect: NoSchedule
+      tolerations:
+      - key: pool-type
+        operator: Equal
+        value: infra
+        effect: NoSchedule
