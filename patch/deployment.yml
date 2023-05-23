@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+spec:
+  template:
+    spec:
+      nodeSelector:
+        iam.gke.io/gke-metadata-server-enabled: true
+      # tolerations:
+      # - key: pool-type
+      #   operator: Equal
+      #   value: infra
+      #   effect: NoSchedule
