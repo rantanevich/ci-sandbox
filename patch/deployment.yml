@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       nodeSelector:
-        iam.gke.io/gke-metadata-server-enabled: true
+        iam.gke.io/gke-metadata-server-enabled: "true"
       # tolerations:
       # - key: pool-type
       #   operator: Equal
